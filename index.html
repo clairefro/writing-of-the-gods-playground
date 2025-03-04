@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Realistic Cow Spots Encoder/Decoder</title>
+    <title>Writing of the Gods Encoder</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -20,23 +20,46 @@
         width: 90%;
         height: 50px;
       }
+      label {
+        display: block;
+        margin-bottom: 10px;
+        font-size: 1.1em;
+      }
+      .select-container {
+        margin-bottom: 15px;
+      }
     </style>
   </head>
   <body>
-    <h2>Realistic Cow Spot Encoder/Decoder</h2>
+    <h2>Writing of the Gods Encoder</h2>
 
-    <label>Enter Seed String (Max 200 chars):</label><br />
+    <!-- Dropdown to select pattern -->
+    <div class="select-container">
+      <label for="patternSelect">Select Pattern:</label>
+      <select id="patternSelect">
+        <option value="cow">Cow Spots</option>
+        <option value="wood">Wood Grain</option>
+      </select>
+    </div>
+
+    <label for="inputSeed">Enter Seed String (Max 200 chars):</label><br />
     <textarea id="inputSeed" maxlength="200"></textarea><br /><br />
 
-    <svg id="cowPattern"></svg>
+    <svg id="pattern"></svg>
 
     <h3>Decoded Output:</h3>
     <textarea id="outputText" readonly></textarea>
 
     <script>
+      // Event listener to handle input seed and pattern change
       document
         .getElementById("inputSeed")
-        .addEventListener("input", generateSpots);
+        .addEventListener("input", generatePattern);
+      document
+        .getElementById("patternSelect")
+        .addEventListener("change", generatePattern);
+
+      let currentPattern = "cow"; // Default pattern is cow
 
       function seededRandom(seed) {
         let value = seed % 2147483647;
@@ -46,12 +69,16 @@
         };
       }
 
-      function generateSpots() {
+      // Generate pattern based on the current pattern selection
+      function generatePattern() {
         const seed = document.getElementById("inputSeed").value;
-        if (!seed) return clearSpots();
+        if (!seed) return clearPattern();
+
+        // Get selected pattern
+        currentPattern = document.getElementById("patternSelect").value;
 
         const rand = seededRandom(hashString(seed));
-        const svg = document.getElementById("cowPattern");
+        const svg = document.getElementById("pattern");
         svg.innerHTML = "";
 
         let hiddenText = document.createElementNS(
@@ -65,7 +92,24 @@
         hiddenText.textContent = btoa(seed);
         svg.appendChild(hiddenText);
 
-        for (let i = 0; i < 6 + Math.floor(seed.length / 10); i++) {
+        if (currentPattern === "cow") {
+          generateCowSpots(rand, svg);
+        } else if (currentPattern === "wood") {
+          generateWoodGrain(rand, svg);
+        }
+
+        decodePattern();
+      }
+
+      // Generate Cow Spots
+      function generateCowSpots(rand, svg) {
+        for (
+          let i = 0;
+          i <
+          6 +
+            Math.floor(document.getElementById("inputSeed").value.length / 10);
+          i++
+        ) {
           let x = rand() * 280;
           let y = rand() * 280;
           let size = 30 + rand() * 70;
@@ -81,10 +125,46 @@
           spot.setAttribute("transform", `rotate(${rotation}, ${x}, ${y})`);
           svg.appendChild(spot);
         }
-
-        decodeSpots();
       }
 
+      // Generate Wood Grain Pattern
+      function generateWoodGrain(rand, svg) {
+        for (
+          let i = 0;
+          i <
+          5 + Math.floor(document.getElementById("inputSeed").value.length / 5);
+          i++
+        ) {
+          let x = rand() * 280;
+          let y = rand() * 280;
+          let width = 20 + rand() * 40;
+          let height = 10 + rand() * 30;
+
+          let path = createWoodGrainPath(x, y, width, height, rand);
+          let grain = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          grain.setAttribute("d", path);
+          grain.setAttribute("fill", "#8B4513");
+          svg.appendChild(grain);
+        }
+      }
+
+      // Create Wood Grain Path
+      function createWoodGrainPath(x, y, width, height, rand) {
+        let path = `M ${x},${y} `;
+        for (let i = 0; i < 5; i++) {
+          let curveX = x + rand() * width * 0.2;
+          let curveY = y + rand() * height * 0.2;
+          path += `C ${curveX},${curveY} ${curveX + rand() * width * 0.3},${
+            curveY + rand() * height
+          } ${x + width},${y + height}`;
+        }
+        return path;
+      }
+
+      // Create Cow Spot Path
       function createSmoothSpot(cx, cy, size, rand) {
         let points = [];
         let numPoints = 6 + Math.floor(rand() * 5);
@@ -110,13 +190,15 @@
         return path;
       }
 
-      function clearSpots() {
-        document.getElementById("cowPattern").innerHTML = "";
+      // Clear the pattern
+      function clearPattern() {
+        document.getElementById("pattern").innerHTML = "";
         document.getElementById("outputText").value = "";
       }
 
-      function decodeSpots() {
-        const svg = document.getElementById("cowPattern");
+      // Decode the hidden seed in the pattern
+      function decodePattern() {
+        const svg = document.getElementById("pattern");
         let hiddenText = svg.querySelector("text");
 
         if (hiddenText) {
@@ -127,6 +209,7 @@
         }
       }
 
+      // Hash function to generate a seed
       function hashString(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
