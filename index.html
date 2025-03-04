@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Realistic Cow Spots Encoder/Decoder</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin: 20px;
+      }
+      svg {
+        width: 300px;
+        height: 300px;
+        border: 1px solid black;
+        background: white;
+      }
+      textarea {
+        width: 90%;
+        height: 50px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Realistic Cow Spot Encoder/Decoder</h2>
+
+    <label>Enter Seed String (Max 200 chars):</label><br />
+    <textarea id="inputSeed" maxlength="200"></textarea><br /><br />
+
+    <svg id="cowPattern"></svg>
+
+    <h3>Decoded Output:</h3>
+    <textarea id="outputText" readonly></textarea>
+
+    <script>
+      document
+        .getElementById("inputSeed")
+        .addEventListener("input", generateSpots);
+
+      function seededRandom(seed) {
+        let value = seed % 2147483647;
+        return function () {
+          value = (value * 16807) % 2147483647;
+          return value / 2147483647;
+        };
+      }
+
+      function generateSpots() {
+        const seed = document.getElementById("inputSeed").value;
+        if (!seed) return clearSpots();
+
+        const rand = seededRandom(hashString(seed));
+        const svg = document.getElementById("cowPattern");
+        svg.innerHTML = "";
+
+        let hiddenText = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "text"
+        );
+        hiddenText.setAttribute("x", "0");
+        hiddenText.setAttribute("y", "0");
+        hiddenText.setAttribute("fill", "none");
+        hiddenText.setAttribute("font-size", "0");
+        hiddenText.textContent = btoa(seed);
+        svg.appendChild(hiddenText);
+
+        for (let i = 0; i < 6 + Math.floor(seed.length / 10); i++) {
+          let x = rand() * 280;
+          let y = rand() * 280;
+          let size = 30 + rand() * 70;
+          let rotation = rand() * 360;
+
+          let path = createSmoothSpot(x, y, size, rand);
+          let spot = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          spot.setAttribute("d", path);
+          spot.setAttribute("fill", "black");
+          spot.setAttribute("transform", `rotate(${rotation}, ${x}, ${y})`);
+          svg.appendChild(spot);
+        }
+
+        decodeSpots();
+      }
+
+      function createSmoothSpot(cx, cy, size, rand) {
+        let points = [];
+        let numPoints = 6 + Math.floor(rand() * 5);
+        for (let i = 0; i < numPoints; i++) {
+          let angle = (i / numPoints) * Math.PI * 2;
+          let radius = size * (0.8 + rand() * 0.5);
+          let px = cx + Math.cos(angle) * radius + (rand() - 0.5) * 15;
+          let py = cy + Math.sin(angle) * radius + (rand() - 0.5) * 15;
+          points.push({ x: px, y: py });
+        }
+
+        let path = `M ${points[0].x},${points[0].y}`;
+        for (let i = 1; i < points.length; i++) {
+          let prev = points[i - 1];
+          let curr = points[i];
+          let midX = (prev.x + curr.x) / 2;
+          let midY = (prev.y + curr.y) / 2;
+          path += ` Q ${prev.x},${prev.y} ${midX},${midY}`;
+        }
+        path += ` Q ${points[points.length - 1].x},${
+          points[points.length - 1].y
+        } ${points[0].x},${points[0].y} Z`;
+        return path;
+      }
+
+      function clearSpots() {
+        document.getElementById("cowPattern").innerHTML = "";
+        document.getElementById("outputText").value = "";
+      }
+
+      function decodeSpots() {
+        const svg = document.getElementById("cowPattern");
+        let hiddenText = svg.querySelector("text");
+
+        if (hiddenText) {
+          let decodedSeed = atob(hiddenText.textContent);
+          document.getElementById("outputText").value = decodedSeed;
+        } else {
+          document.getElementById("outputText").value = "";
+        }
+      }
+
+      function hashString(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+          hash = (hash * 31 + str.charCodeAt(i)) % 2147483647;
+        }
+        return hash;
+      }
+    </script>
+  </body>
+</html>
